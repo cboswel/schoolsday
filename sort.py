@@ -3,6 +3,7 @@
 from deprivation_by_postcode import *
 import pandas as pd
 import pgeocode
+import rich_dataframe
 
 def get_best_distances(postcodes):
     STEP_postcode = "DN22"
@@ -55,6 +56,12 @@ def get_type_scores(types):
     return scores
 
 if __name__ == "__main__":
+
+    distance_scalar = 5
+    deprivation_scalar = 5
+    gender_scalar = 5
+    type_scalar = 5
+
     data = pd.read_excel("schools.xlsx")
     data["deprivation"] = get_deprivation(data["postcode"])
     data["best_distance"] = get_best_distances(data["postcode"])
@@ -64,11 +71,14 @@ if __name__ == "__main__":
     data["deprivation_rank"] = data["deprivation"].rank()
     data["gender_rank"] = data["genders"].rank(ascending=False)
     data["type_rank"] = data["types"].rank(ascending=False)
-    deprivation_scaled = 1
-    data["priority"] = data["distance_rank"] + data["deprivation_rank"]
+    distance_scaled = (data["distance_rank"] * distance_scalar)
+    deprivation_scaled = (data["deprivation_rank"] * deprivation_scalar)
+    gender_scaled = (data["gender_rank"] * gender_scalar)
+    type_scaled = (data["type_rank"] * type_scalar)
+    data["priority"] = distance_scaled + deprivation_scaled + gender_scaled + type_scaled
 
-    print(data.sort_values("priority"))
-
+    table = data.sort_values("priority")
+    print(rich_dataframe.prettify(table))
 
 """
 prioritise:
