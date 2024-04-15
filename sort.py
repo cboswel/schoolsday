@@ -2,22 +2,71 @@
 
 from deprivation_by_postcode import *
 import pandas as pd
+import pgeocode
 
-class School():
-    def __init__(self, name, distance, funding, students, contact="", contact_number=""):
-       self.name = name
-       self.distance = distance
-       self.funding = funding
-       self.students = students
-       self.contact = contact
-       self.contact_number = contact_number
+def get_best_distances(postcodes):
+    STEP_postcode = "DN22"
+    FTF_postcode = "S60"
+    Culham_postcode = "OX14"
+
+    STEP_distances = []
+    FTF_distances = []
+    Culham_distances = []
+
+    distance_rating_STEP = 5;
+    distance_rating_Culham = 5;
+    distance_rating_FTF = 5;
+    dist = pgeocode.GeoDistance('GB')
+    for postcode in postcodes:
+        STEP_distances.append(dist.query_postal_code(postcode, STEP_postcode))
+        FTF_distances.append(dist.query_postal_code(postcode, FTF_postcode))
+        Culham_distances.append(dist.query_postal_code(postcode, Culham_postcode))
+
+    best_scores = []
+    for i, _ in enumerate(postcodes):
+        best = max(STEP_distances[i] * distance_rating_STEP,
+                    FTF_distances[i] * distance_rating_FTF,
+                    Culham_distances[i] * distance_rating_Culham)
+        best_scores.append(best)
+    return best_scores
+
+def get_gender_scores(genders):
+    scores = []
+    for gender in genders:
+        if gender == "female":
+            score = 1
+        elif gender == "male":
+            score = -1
+        else:
+            score = 0
+        scores.append(score)
+    return scores
+        
+def get_type_scores(types):
+    scores = []
+    for school_type in types:
+        if school_type == "utc":
+            score = 1
+        elif school_type == "private":
+            score = -1
+        else:
+            score = 0
+        scores.append(score)
+    return scores
 
 if __name__ == "__main__":
     data = pd.read_excel("schools.xlsx")
     data["deprivation"] = get_deprivation(data["postcode"])
-    data["distance_rank"] = data["distance"].rank()
+    data["best_distance"] = get_best_distances(data["postcode"])
+    data["genders"] = get_gender_scores(data["gender"])
+    data["types"] = get_type_scores(data["type"])
+    data["distance_rank"] = data["best_distance"].rank()
     data["deprivation_rank"] = data["deprivation"].rank()
+    data["gender_rank"] = data["genders"].rank(ascending=False)
+    data["type_rank"] = data["types"].rank(ascending=False)
+    deprivation_scaled = 1
     data["priority"] = data["distance_rank"] + data["deprivation_rank"]
+
     print(data.sort_values("priority"))
 
 
@@ -27,3 +76,4 @@ prioritise:
     Location? Not very important.
     School specific: Private, school meals, type[De-prioritise independent, +UTC, +singlesex female -siglesex male, visited before?]
     Which dates do you want? (ranked)
+"""
