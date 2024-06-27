@@ -33,7 +33,6 @@ def get_deprivation(postcodes):
             rank = "MDM_rank"
         else:
             raise Exception(f"LSOA code {LSOA} not recognised!")
-        
 
         total = len(data.index)
         index = data.loc[data[location] == LSOA].index[0]
