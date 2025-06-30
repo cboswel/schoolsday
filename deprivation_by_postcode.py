@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+import pdb
+
 def get_deprivation(postcodes):
     import pandas as pd
 
@@ -8,9 +10,17 @@ def get_deprivation(postcodes):
     deprivation_ranks = []
     data = pd.read_csv("postcodes/postcode_lookup.zip", usecols=req_cols, compression="zip", encoding='latin-1')
     for postcode in postcodes:
-        index = data.loc[data["pcds"] == postcode].index[0]
-        LSOA = data._get_value(index, "lsoa11cd")
-        LSOAs.append(LSOA)
+        postcode = postcode.strip().upper()
+        matches = data.loc[data["pcds"] == postcode]
+        if matches.empty:
+            print(f"WARNING: postcode '{postcode}' not found in lookup file.")
+            LSOAs.append(None)
+            continue
+
+        index = matches.index[0]
+        lsoa = data._get_value(index, "lsoa11cd")
+        print(f"postcode = {postcode} and pcds = {lsoa}")
+        LSOAs.append(lsoa)
 
     for LSOA in LSOAs:
         # If we want to be fast we should do each of the countries in groups instead, to minimize file opening
@@ -22,7 +32,7 @@ def get_deprivation(postcodes):
         elif LSOA[0] == "W":
             data = pd.read_csv("postcodes/wales.csv")
             location = "LSOA_Code"
-            rank = "WIMD2019_Rank"
+            rank = "WIMD2019_Score"
         elif LSOA[0] == "S":
             data = pd.read_csv("postcodes/scotland.csv")
             location = "Data_Zone"

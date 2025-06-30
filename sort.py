@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-#from deprivation_by_postcode import *
+from deprivation_by_postcode import *
 import pandas as pd
 import pgeocode
 import pdb
@@ -48,6 +48,9 @@ def get_best_distances(postcodes):
                     Culham_distances[i] * distance_rating_Culham,
                    RAICo_distances[i] * distance_rating_RC)
         best_scores.append(best)
+        if best != best:
+            pdb.set_trace()
+
     return best_scores
 
 def get_gender_scores(types):
@@ -71,6 +74,13 @@ def get_type_scores(types, names):
             score = -1
         else:
             score = 0
+
+        """
+        REMOVING TYPE SCORES THIS YEAR
+        """
+
+        score = 0
+
         #print(f"{school_type} given a score of {score}")
         scores.append(score)
     return scores
@@ -98,17 +108,17 @@ def FSM_scores(FSM):
 
 if __name__ == "__main__":
     data = pd.read_excel("data.xlsx")
-#    data["deprivation"] = get_deprivation(data["postcode"])
+    data["deprivation"] = get_deprivation(data["postcode"])
     data["best_distance"] = get_best_distances(data["postcode"])
     data["genders"] = get_gender_scores(data["type"])
     data["types"] = get_type_scores(data["type"], data["name"])
     data["distance_rank"] = data["best_distance"].rank()
     data["FSM_scores"] = FSM_scores(data["FSM"])
-#    data["deprivation_rank"] = data["deprivation"].rank()
+    data["deprivation_rank"] = data["deprivation"].rank()
     data["gender_rank"] = data["genders"].rank(ascending=False)
     data["type_rank"] = data["types"].rank(ascending=False)
     deprivation_scaled = 1
-    data["priority"] = data["distance_rank"] + data["FSM_scores"] + data["type_rank"] + data["gender_rank"] # + data["deprivation_rank"]
+    data["priority"] = data["distance_rank"] + data["FSM_scores"] * 1.2 + data["type_rank"] + data["gender_rank"] # + data["deprivation_rank"]
     #pdb.set_trace()
     """
     print("type:")
@@ -119,18 +129,17 @@ if __name__ == "__main__":
     print(data.sort_values("FSM_scores")[["name", "FSM", "FSM_scores"]])
     """
     data = data.sort_values("priority")
-    print(data[["name", "priority", "distance_rank", "type_rank", "gender_rank"]])
+    print(data[["name", "priority", "distance_rank", "type_rank", "gender_rank", "FSM_scores", "deprivation_rank"]][:12])
+    print(data[["name"]][:12])
 
-"""
+    """
     output_data = {"name" : [], "size" : [], "email" : [], "postcode" : [], "assigned_slot" : []}
     cut_data = {"name" : [], "type" : [], "size" : [], "email" : [], "postcode" : []}
-    for group in best_board.groups:
         if group.name not in output_data["name"]:
             output_data["name"].append(group.name)
             output_data["size"].append(group.size)
             output_data["email"].append(group.email)
             output_data["postcode"].append(group.postcode)
-            output_data["assigned_slot"].append(group.assigned_slot)
 
     df =  pd.DataFrame(output_data)
     df = df.sort_values("assigned_slot")
@@ -147,5 +156,4 @@ if __name__ == "__main__":
     cut_df = pd.DataFrame(cut_data)
     df.to_csv('out.csv', index=False)
     cut_df.to_csv('rej.csv', index=False)
-
-"""
+    """
